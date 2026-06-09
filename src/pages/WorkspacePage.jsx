@@ -12,8 +12,8 @@ export default function WorkspacePage() {
   const refreshGalleries = () => setUserGalleries(getUserGalleries());
   useEffect(() => { refreshGalleries(); }, []);
 
-  const handleCopyLink = async (templateId) => {
-    const url = generateGalleryUrl(templateId);
+  const handleCopyLink = async (galleryObj) => {
+    const url = generateGalleryUrl(galleryObj);
     try { await navigator.clipboard.writeText(url); }
     catch {
       const ta = document.createElement('textarea');
@@ -121,7 +121,7 @@ export default function WorkspacePage() {
                           </span>
                         </div>
                         <div className="text-gray-600 text-xs mt-1 font-mono truncate">
-                          {generateGalleryUrl(gallery.id)}
+                          {generateGalleryUrl(gallery)}
                         </div>
                       </div>
                     </div>
@@ -136,14 +136,14 @@ export default function WorkspacePage() {
                         <Eye className="w-4 h-4" />
                       </Link>
                       <button
-                        onClick={() => handleCopyLink(gallery.id)}
+                        onClick={() => handleCopyLink(gallery)}
                         className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
                         title="复制链接"
                       >
                         <Share2 className="w-4 h-4" />
                       </button>
                       <a
-                        href={generateGalleryUrl(gallery.id)}
+                        href={generateGalleryUrl(gallery)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
@@ -192,7 +192,7 @@ export default function WorkspacePage() {
                       <Link to={`/gallery/${template.id}`} className="text-primary-400 hover:text-primary-300 text-xs flex items-center gap-1">
                         <Eye className="w-3 h-3" />预览
                       </Link>
-                      <button onClick={() => handleCopyLink(template.id)} className="text-gray-400 hover:text-white text-xs flex items-center gap-1">
+                      <button onClick={() => handleCopyLink(template)} className="text-gray-400 hover:text-white text-xs flex items-center gap-1">
                         <Share2 className="w-3 h-3" />复制
                       </button>
                     </div>

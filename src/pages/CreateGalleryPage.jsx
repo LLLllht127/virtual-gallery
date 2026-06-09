@@ -180,8 +180,8 @@ export default function CreateGalleryPage() {
           title: (a.title || '').trim() || `作品 ${i + 1}`,
           artist: (a.artist || '').trim() || '创作者',
           description: (a.description || '').trim(),
-          image: a.image.trim().startsWith('data:') && a.image.length > 500000
-            ? await compressImage(a.image.trim(), 1200)
+          image: a.image.trim().startsWith('data:')
+            ? await compressImage(a.image.trim(), 800)
             : a.image.trim(),
           wall: a.wall || 'front',
           x: a.x,
@@ -191,8 +191,8 @@ export default function CreateGalleryPage() {
       );
 
       const firstImage = compressedArtworks[0]?.image || template.thumbnail;
-      const compressedThumbnail = firstImage.startsWith('data:') && firstImage.length > 500000
-        ? await compressImage(firstImage, 600)
+      const compressedThumbnail = firstImage.startsWith('data:')
+        ? await compressImage(firstImage, 400)
         : firstImage;
 
       const newGallery = {

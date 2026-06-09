@@ -44,7 +44,7 @@ export default function GalleryPage() {
     );
   }
 
-  const galleryUrl = generateGalleryUrl(gallery.id);
+  const galleryUrl = generateGalleryUrl(gallery);
   const isUserGallery = gallery.id.startsWith('user-');
 
   // 上一个 / 下一个（模板 + 用户展厅合并后的全部ID）

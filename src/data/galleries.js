@@ -214,13 +214,9 @@ export function generateGalleryUrl(gallery) {
         totalImageSize += aw.image.length;
       }
     }
-    if (totalImageSize > 30000) {
-      console.warn('[generateGalleryUrl] 本地图片过大（共 ' + totalImageSize + ' 字符），已替换占位图。建议改用网络图片链接。');
-      for (const aw of slim.artworks) {
-        if (aw.image && aw.image.startsWith('data:') && aw.image.length > 8000) {
-          aw.image = PLACEHOLDER_IMAGE;
-        }
-      }
+    if (totalImageSize > 150000) {
+      console.warn('[generateGalleryUrl] 本地图片总大小较大（共 ' + totalImageSize + ' 字符），建议改用网络图片链接以获得更短分享链接。');
+      // 保留用户原图，lz-string 压缩后 URL 长度通常可控
     }
     const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(slim));
     return `${base}#/gallery/${gallery.id}?d=${compressed}`;
@@ -325,4 +321,6 @@ export function getGalleryById(id) {
 
 export function generateGalleryId() {
   return 'user-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+andom().toString(36).slice(2, 8);
 }

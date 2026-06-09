@@ -10,27 +10,35 @@ import PositionEditor from '../components/PositionEditor';
 import FirstPersonPreview from '../components/FirstPersonPreview';
 
 // 用 Canvas 压缩大图片（异步）
-function compressImage(dataUrl, maxWidth = 1200) {
+function compressImage(dataUrl, maxWidth = 600) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      if (img.width <= maxWidth) { resolve(dataUrl); return; }
-      const ratio = maxWidth / img.width;
-      const h = Math.round(img.height * ratio);
-      const canvas = document.createElement('canvas');
-      canvas.width = maxWidth;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, maxWidth, h);
       try {
-        const compressed = canvas.toDataURL('image/jpeg', 0.85);
-        console.log(`[compressImage] ${dataUrl.length} → ${compressed.length} bytes`);
+        let canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        // 缩放至 maxWidth
+        if (w > maxWidth) {
+          const ratio = maxWidth / w;
+          w = maxWidth;
+          h = Math.round(h * ratio);
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.72);
+        console.log(`[compressImage] ${img.width}x${img.height} (${dataUrl.length}B) → ${w}x${h} (${compressed.length}B)`);
         resolve(compressed);
-      } catch {
+      } catch (e) {
+        console.warn('[compressImage] failed:', e);
         resolve(dataUrl);
       }
     };
-    img.onerror = () => resolve(dataUrl);
+    img.onerror = () => { console.warn('[compressImage] img load failed'); resolve(dataUrl); };
     img.src = dataUrl;
   });
 }
@@ -181,7 +189,7 @@ export default function CreateGalleryPage() {
           artist: (a.artist || '').trim() || '创作者',
           description: (a.description || '').trim(),
           image: a.image.trim().startsWith('data:')
-            ? await compressImage(a.image.trim(), 800)
+            ? await compressImage(a.image.trim(), 600)
             : a.image.trim(),
           wall: a.wall || 'front',
           x: a.x,
@@ -192,7 +200,7 @@ export default function CreateGalleryPage() {
 
       const firstImage = compressedArtworks[0]?.image || template.thumbnail;
       const compressedThumbnail = firstImage.startsWith('data:')
-        ? await compressImage(firstImage, 400)
+        ? await compressImage(firstImage, 300)
         : firstImage;
 
       const newGallery = {

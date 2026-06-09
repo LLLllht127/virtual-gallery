@@ -492,6 +492,17 @@ export default function CreateGalleryPage() {
                     if (originalIdx >= 0) {
                       const updated = [...artworks];
                       updated[originalIdx] = { ...updated[originalIdx], [field]: value };
+                      // 如果切换墙面，重置 x 坐标为该墙面的合理位置
+                      if (field === 'wall') {
+                        if (value === 'front' || value === 'back') {
+                          updated[originalIdx].x = 0;
+                          updated[originalIdx].z = value === 'front' ? -10.6 : 4.6;
+                        } else {
+                          // left/right 墙：x 是 z 位置
+                          updated[originalIdx].x = -3;
+                          updated[originalIdx].z = value === 'left' ? -6.6 : 6.6;
+                        }
+                      }
                       setArtworks(updated);
                     }
                   }}

@@ -177,10 +177,11 @@ export const ARTWORK_SLOTS = [
   { wall: 'right', x: 1, z: -6 },
 ];
 
-// 生成展厅分享链接
+// 生成展厅分享链接（兼容 HashRouter 和 GitHub Pages 子路径）
 export function generateGalleryUrl(galleryId) {
-  const base = window.location.origin;
-  return `${base}/gallery/${galleryId}`;
+  const url = new URL(window.location.href);
+  url.hash = '';
+  return `${url.href}#/gallery/${galleryId}`;
 }
 
 // 根据ID获取模板

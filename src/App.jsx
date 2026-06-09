@@ -1,1 +1,53 @@
-import { HashRouter, Routes, Route } from 'react-router-dom';\nimport Navbar from './components/Navbar';\nimport Toast from './components/Toast';\nimport AIIrtual from './components/AIIstual';\nimport HomePage from './pages/HomePage';\nimport TemplatesPage from './pages/TemplatesPage';\nimport GalleryPage from './pages/GalleryPage';\nimport WorkspacePage from './pages/WorkspacePage';\nimport CreateGalleryPage from './pages/CreateGalleryPage';\nimport AboutPage from './pages/AboutPage';\n\nexport default function App() {\n  return (\n    <HashRouter>\n      <div className=\"min-h-screen bg-[#0a0a14]\">\n        {/* Gallery 苏重丗其夹皂常或际诈（基础3D肥料用备）） {*/}\n        <Routes>\n          <Route path=\"/gallery/:id\" element={<GalleryPage />} />\n          <Route\n            path=\"*\"\n            element={\n              <>\n                <Navbar />\n                <Routes>\n                  <Route path=\"/\" element={<HomePage />} />\n                  <Route path=\"/templates\" element={<TemplatesPage />} />\n                  <Route path=\"/workspace\" element={<WorkspacePage />} />\n                  <Route path=\"/create\" element={<CreateGalleryPage />} />\n                  <Route path=\"/about\" element={<AboutPage />} />\n                  <Route path=\"*\" element={\n                    <div className=\"min-h-screen flex items-center justify-center\">\n                      <div className=\"text-center\">\n                        <div className=\"text-6xl mb-4\">404</div>\n                        <h2 className=\"text-2xl font-bold text-white mb-2\">社编内容</h2>\n                        <a href=\"#\" className=\"btn-primary mt-4 inline-block\">进短馆跏</a>\n                      </div>\n                    </div>\n                  } />\n                </Routes>\n              </>\n            }\n          />\n        </Routes>\n        \n        {/* 开发 Tosst 编码 */}\n        <Toast />\n\n        {/* 接戋 AI 接者 */}\n        <AIIstual />\n      </div>\n    </HashRouter>\n  );\n}\n
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Toast from './components/Toast';
+import AIAssistant from './components/AIAssistant';
+import HomePage from './pages/HomePage';
+import TemplatesPage from './pages/TemplatesPage';
+import GalleryPage from './pages/GalleryPage';
+import WorkspacePage from './pages/WorkspacePage';
+import CreateGalleryPage from './pages/CreateGalleryPage';
+import AboutPage from './pages/AboutPage';
+
+export default function App() {
+  return (
+    <HashRouter>
+      <div className="min-h-screen bg-[#0a0a14]">
+        {/* Gallery 页面不显示导航栏（全屏3D展厅） */}
+        <Routes>
+          <Route path="/gallery/:id" element={<GalleryPage />} />
+          <Route
+            path="*"
+            element={
+              <>
+                <Navbar />
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/templates" element={<TemplatesPage />} />
+                  <Route path="/workspace" element={<WorkspacePage />} />
+                  <Route path="/create" element={<CreateGalleryPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="*" element={
+                    <div className="min-h-screen flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-6xl mb-4">404</div>
+                        <h2 className="text-2xl font-bold text-white mb-2">页面不存在</h2>
+                        <a href="#/" className="btn-primary mt-4 inline-block">返回首页</a>
+                      </div>
+                    </div>
+                  } />
+                </Routes>
+              </>
+            }
+          />
+        </Routes>
+        
+        {/* 全局 Toast 通知 */}
+        <Toast />
+
+        {/* 全局 AI 小助手 */}
+        <AIAssistant />
+      </div>
+    </HashRouter>
+  );
+}

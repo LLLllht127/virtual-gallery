@@ -195,6 +195,7 @@ function serializeGallery(gallery) {
       description: a.description || '',
       image: a.image,
       x: a.x,
+      y: a.y,
       z: a.z,
       wall: a.wall,
     })),

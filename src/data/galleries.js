@@ -322,5 +322,3 @@ export function getGalleryById(id) {
 export function generateGalleryId() {
   return 'user-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
-andom().toString(36).slice(2, 8);
-}

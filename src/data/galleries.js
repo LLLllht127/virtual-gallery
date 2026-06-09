@@ -197,9 +197,6 @@ function serializeGallery(gallery) {
       x: a.x,
       z: a.z,
       wall: a.wall,
-      position: a.position,
-      rotation: a.rotation,
-      scale: a.scale,
     })),
   };
 }
@@ -208,18 +205,22 @@ export function generateGalleryUrl(gallery) {
   const base = window.location.origin + window.location.pathname;
   try {
     const slim = serializeGallery(gallery);
+    // 计算总图片大小，给用户提示
     let totalImageSize = 0;
+    let imageCount = 0;
     for (const aw of slim.artworks) {
       if (aw.image && aw.image.startsWith('data:')) {
         totalImageSize += aw.image.length;
+        imageCount++;
       }
     }
-    if (totalImageSize > 150000) {
-      console.warn('[generateGalleryUrl] 本地图片总大小较大（共 ' + totalImageSize + ' 字符），建议改用网络图片链接以获得更短分享链接。');
-      // 保留用户原图，lz-string 压缩后 URL 长度通常可控
+    if (totalImageSize > 200000) {
+      console.warn('[generateGalleryUrl] 本地图片总大小较大（共 ' + totalImageSize + ' 字符 / ' + imageCount + ' 张），建议使用网络图片链接以获得更稳定的分享链接。');
     }
     const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(slim));
-    return `${base}#/gallery/${gallery.id}?d=${compressed}`;
+    const fullUrl = `${base}#/gallery/${gallery.id}?d=${compressed}`;
+    console.log('[generateGalleryUrl] 生成链接长度: ' + fullUrl.length + ' 字符, 作品数: ' + slim.artworks.length);
+    return fullUrl;
   } catch (e) {
     console.warn('[generateGalleryUrl] 编码失败，回退到基础链接:', e);
     return `${base}#/gallery/${gallery.id}`;
@@ -235,8 +236,18 @@ export function decodeGalleryFromUrl() {
     const encoded = params.get('d');
     if (!encoded) return null;
     const json = LZString.decompressFromEncodedURIComponent(encoded);
-    if (!json) return null;
-    return JSON.parse(json);
+    if (!json) {
+      console.warn('[decodeGalleryFromUrl] lz-string 解压返回空字符串，URL 数据可能已损坏');
+      return null;
+    }
+    const parsed = JSON.parse(json);
+    // 验证必要字段
+    if (!parsed.id || !Array.isArray(parsed.artworks)) {
+      console.warn('[decodeGalleryFromUrl] 数据结构不完整:', { id: parsed.id, hasArtworks: Array.isArray(parsed.artworks) });
+      return null;
+    }
+    console.log('[decodeGalleryFromUrl] 成功解码展厅:', parsed.id, '- 作品数:', parsed.artworks.length);
+    return parsed;
   } catch (e) {
     console.warn('[decodeGalleryFromUrl] 解码失败:', e);
     return null;
@@ -312,11 +323,26 @@ export function deleteUserGallery(id) {
 }
 
 export function getGalleryById(id) {
+  // 1. 优先使用 URL 中的数据（分享链接的权威来源）
   const embedded = decodeGalleryFromUrl();
-  if (embedded && embedded.id === id) return embedded;
+  if (embedded && embedded.id === id) {
+    console.log('[getGalleryById] 使用 URL 内嵌数据, id:', id);
+    return embedded;
+  }
+  // 2. 然后是用户本地保存的展厅
   const userGallery = getUserGalleries().find(g => g.id === id);
-  if (userGallery) return userGallery;
-  return GALLERY_TEMPLATES.find(t => t.id === id) || null;
+  if (userGallery) {
+    console.log('[getGalleryById] 使用本地存储, id:', id);
+    return userGallery;
+  }
+  // 3. 最后是模板
+  const tpl = GALLERY_TEMPLATES.find(t => t.id === id);
+  if (tpl) {
+    console.log('[getGalleryById] 使用模板, id:', id);
+  } else {
+    console.warn('[getGalleryById] 未找到展厅, id:', id);
+  }
+  return tpl || null;
 }
 
 export function generateGalleryId() {

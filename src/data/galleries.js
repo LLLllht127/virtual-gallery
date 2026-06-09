@@ -41,7 +41,6 @@ export const GALLERY_TEMPLATES = [
       { id: 'bw4', title: '2025 年度报告', artist: '战略部', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80', x: 0, z: -6, wall: 'back' },
     ]
   },
-
   {
     id: 'gallery-culture-01',
     name: '传统文化博物馆',
@@ -62,7 +61,6 @@ export const GALLERY_TEMPLATES = [
       { id: 'cw4', title: '民族服饰展', artist: '民族文化馆', image: 'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?w=400&q=80', x: 0, z: -6, wall: 'back' },
     ]
   },
-
   {
     id: 'gallery-fashion-01',
     name: '时尚设计展',
@@ -83,8 +81,6 @@ export const GALLERY_TEMPLATES = [
       { id: 'fw4', title: '极简主义', artist: '唐奕颖', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80', x: 0, z: -6, wall: 'back' },
     ]
   },
-
-
   {
     id: 'gallery-realestate-01',
     name: '房地产展厅',
@@ -146,7 +142,6 @@ export const GALLERY_TEMPLATES = [
       { id: 'aw4', title: '轻量化材料', artist: '材料工程部', image: 'https://images.unsplash.com/photo-1625047509248-ec889cbff17f?w=400&q=80', x: 0, z: -6, wall: 'back' },
     ]
   },
-
 ];
 
 export const CATEGORIES = [
@@ -157,67 +152,94 @@ export const CATEGORIES = [
   { id: 'culture', label: '文化博物' },
 ];
 
-// 预置作品展位坐标（前墙3 + 后墙3 + 左墙2 + 右墙2 = 10 个位置）
-// 预置作品展位坐标（前墙4 + 后墙3 + 左墙2 + 右墙2 = 11 个位置）
 export const ARTWORK_SLOTS = [
-  // 前墙
   { wall: 'front', x: -4, z: 0 },
   { wall: 'front', x: -1.5, z: 0 },
   { wall: 'front', x: 1.5, z: 0 },
   { wall: 'front', x: 4, z: 0 },
-  // 后墙
   { wall: 'back', x: -4, z: -6 },
   { wall: 'back', x: 0, z: -6 },
   { wall: 'back', x: 4, z: -6 },
-  // 左墙
   { wall: 'left', x: -3, z: -6 },
   { wall: 'left', x: 1, z: -6 },
-  // 右墙
   { wall: 'right', x: -3, z: -6 },
   { wall: 'right', x: 1, z: -6 },
 ];
 
-// --- URL 数据编解码辅助函数 ---
-function toUrlBase64(str) {
-  const bytes = new TextEncoder().encode(str);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) {
-    bin += String.fromCharCode(bytes[i]);
-  }
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+// ============================================================
+// 分享链接：使用 lz-string 压缩，数据放在 hash 查询参数中
+// ============================================================
+import LZString from 'lz-string';
+
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80';
+
+function serializeGallery(gallery) {
+  return {
+    id: gallery.id,
+    name: gallery.name,
+    description: gallery.description || '',
+    category: gallery.category,
+    categoryLabel: gallery.categoryLabel,
+    roomColor: gallery.roomColor,
+    wallColor: gallery.wallColor,
+    floorColor: gallery.floorColor,
+    spotlightColor: gallery.spotlightColor,
+    spotCount: gallery.spotCount || 4,
+    tags: gallery.tags || [],
+    createdAt: gallery.createdAt,
+    thumbnail: gallery.thumbnail,
+    artworks: (gallery.artworks || []).map(a => ({
+      id: a.id,
+      title: a.title,
+      artist: a.artist,
+      description: a.description || '',
+      image: a.image,
+      x: a.x,
+      z: a.z,
+      wall: a.wall,
+      position: a.position,
+      rotation: a.rotation,
+      scale: a.scale,
+    })),
+  };
 }
 
-function fromUrlBase64(encoded) {
-  const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
-  const pad = base64.length % 4 === 0 ? '' : '='.repeat(4 - (base64.length % 4));
-  const bin = atob(base64 + pad);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) {
-    bytes[i] = bin.charCodeAt(i);
-  }
-  return new TextDecoder().decode(bytes);
-}
-
-// 生成展厅分享链接（包含完整展厅数据，可在任意浏览器打开）
 export function generateGalleryUrl(gallery) {
-  const url = new URL(window.location.href);
-  url.hash = '';
+  const base = window.location.origin + window.location.pathname;
   try {
-    const encoded = toUrlBase64(JSON.stringify(gallery));
-    url.searchParams.set('d', encoded);
+    const slim = serializeGallery(gallery);
+    let totalImageSize = 0;
+    for (const aw of slim.artworks) {
+      if (aw.image && aw.image.startsWith('data:')) {
+        totalImageSize += aw.image.length;
+      }
+    }
+    if (totalImageSize > 30000) {
+      console.warn('[generateGalleryUrl] 本地图片过大（共 ' + totalImageSize + ' 字符），已替换占位图。建议改用网络图片链接。');
+      for (const aw of slim.artworks) {
+        if (aw.image && aw.image.startsWith('data:') && aw.image.length > 8000) {
+          aw.image = PLACEHOLDER_IMAGE;
+        }
+      }
+    }
+    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(slim));
+    return `${base}#/gallery/${gallery.id}?d=${compressed}`;
   } catch (e) {
     console.warn('[generateGalleryUrl] 编码失败，回退到基础链接:', e);
+    return `${base}#/gallery/${gallery.id}`;
   }
-  return `${url.href}#/gallery/${gallery.id}`;
 }
 
-// 从 URL 中解码嵌入的展厅数据
 export function decodeGalleryFromUrl() {
   try {
-    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    const qIdx = hash.indexOf('?');
+    if (qIdx < 0) return null;
+    const params = new URLSearchParams(hash.slice(qIdx + 1));
     const encoded = params.get('d');
     if (!encoded) return null;
-    const json = fromUrlBase64(encoded);
+    const json = LZString.decompressFromEncodedURIComponent(encoded);
+    if (!json) return null;
     return JSON.parse(json);
   } catch (e) {
     console.warn('[decodeGalleryFromUrl] 解码失败:', e);
@@ -225,20 +247,16 @@ export function decodeGalleryFromUrl() {
   }
 }
 
-// 根据ID获取模板
 export function getTemplateById(id) {
   return GALLERY_TEMPLATES.find(t => t.id === id) || null;
 }
 
-// localStorage 键
 const USER_GALLERIES_KEY = 'virtual_gallery_user_galleries';
 
-// 获取用户创建的所有展厅
 export function getUserGalleries() {
   try {
     const data = localStorage.getItem(USER_GALLERIES_KEY);
     const list = data ? JSON.parse(data) : [];
-    // 合并内存兜底数据
     const fallback = window.__virtualGalleryFallback || [];
     const merged = [...list];
     for (const g of fallback) {
@@ -248,7 +266,6 @@ export function getUserGalleries() {
   } catch { return window.__virtualGalleryFallback || []; }
 }
 
-// 保存（或更新）一个用户展厅
 export function saveUserGallery(gallery) {
   const list = getUserGalleries();
   const idx = list.findIndex(g => g.id === gallery.id);
@@ -257,18 +274,13 @@ export function saveUserGallery(gallery) {
   } else {
     list.push(gallery);
   }
-
   const json = JSON.stringify(list);
-
-  // 尝试直接保存
   try {
     localStorage.setItem(USER_GALLERIES_KEY, json);
     return gallery;
   } catch (e) {
     console.warn('[saveUserGallery] 直接保存失败，尝试降级:', e.message);
   }
-
-  // 降级：移除旧展厅数据，只保留最新的
   try {
     const singleJson = JSON.stringify([gallery]);
     localStorage.setItem(USER_GALLERIES_KEY, singleJson);
@@ -277,8 +289,6 @@ export function saveUserGallery(gallery) {
   } catch (e2) {
     console.warn('[saveUserGallery] 降级也失败:', e2.message);
   }
-
-  // 最终降级：清空 localStorage 中其他数据后重试
   try {
     const keys = Object.keys(localStorage);
     for (const key of keys) {
@@ -291,7 +301,6 @@ export function saveUserGallery(gallery) {
     return gallery;
   } catch (e3) {
     console.error('[saveUserGallery] localStorage 完全不可用:', e3);
-    // 内存兜底
     window.__virtualGalleryFallback = window.__virtualGalleryFallback || [];
     const fb = window.__virtualGalleryFallback;
     const fbIdx = fb.findIndex(g => g.id === gallery.id);
@@ -300,28 +309,20 @@ export function saveUserGallery(gallery) {
   }
 }
 
-// 删除用户展厅
 export function deleteUserGallery(id) {
   const list = getUserGalleries().filter(g => g.id !== id);
   localStorage.setItem(USER_GALLERIES_KEY, JSON.stringify(list));
   return list;
 }
 
-// 根据 ID 获取展厅（优先查 URL 嵌入数据，再查用户创建，最后查模板）
 export function getGalleryById(id) {
-  // 1. 优先查 URL 中嵌入的展厅数据（分享链接携带完整数据）
   const embedded = decodeGalleryFromUrl();
   if (embedded && embedded.id === id) return embedded;
-
-  // 2. 再查用户自建（localStorage）
   const userGallery = getUserGalleries().find(g => g.id === id);
   if (userGallery) return userGallery;
-
-  // 3. 再查模板
   return GALLERY_TEMPLATES.find(t => t.id === id) || null;
 }
 
-// 生成唯一 ID
 export function generateGalleryId() {
   return 'user-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }

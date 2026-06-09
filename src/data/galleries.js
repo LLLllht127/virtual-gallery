@@ -177,11 +177,52 @@ export const ARTWORK_SLOTS = [
   { wall: 'right', x: 1, z: -6 },
 ];
 
-// 生成展厅分享链接（兼容 HashRouter 和 GitHub Pages 子路径）
-export function generateGalleryUrl(galleryId) {
+// --- URL 数据编解码辅助函数 ---
+function toUrlBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) {
+    bin += String.fromCharCode(bytes[i]);
+  }
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromUrlBase64(encoded) {
+  const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = base64.length % 4 === 0 ? '' : '='.repeat(4 - (base64.length % 4));
+  const bin = atob(base64 + pad);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) {
+    bytes[i] = bin.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+// 生成展厅分享链接（包含完整展厅数据，可在任意浏览器打开）
+export function generateGalleryUrl(gallery) {
   const url = new URL(window.location.href);
   url.hash = '';
-  return `${url.href}#/gallery/${galleryId}`;
+  try {
+    const encoded = toUrlBase64(JSON.stringify(gallery));
+    url.searchParams.set('d', encoded);
+  } catch (e) {
+    console.warn('[generateGalleryUrl] 编码失败，回退到基础链接:', e);
+  }
+  return `${url.href}#/gallery/${gallery.id}`;
+}
+
+// 从 URL 中解码嵌入的展厅数据
+export function decodeGalleryFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('d');
+    if (!encoded) return null;
+    const json = fromUrlBase64(encoded);
+    return JSON.parse(json);
+  } catch (e) {
+    console.warn('[decodeGalleryFromUrl] 解码失败:', e);
+    return null;
+  }
 }
 
 // 根据ID获取模板
@@ -266,12 +307,17 @@ export function deleteUserGallery(id) {
   return list;
 }
 
-// 根据 ID 获取展厅（优先查用户创建，再查模板）
+// 根据 ID 获取展厅（优先查 URL 嵌入数据，再查用户创建，最后查模板）
 export function getGalleryById(id) {
-  // 先查用户自建
+  // 1. 优先查 URL 中嵌入的展厅数据（分享链接携带完整数据）
+  const embedded = decodeGalleryFromUrl();
+  if (embedded && embedded.id === id) return embedded;
+
+  // 2. 再查用户自建（localStorage）
   const userGallery = getUserGalleries().find(g => g.id === id);
   if (userGallery) return userGallery;
-  // 再查模板
+
+  // 3. 再查模板
   return GALLERY_TEMPLATES.find(t => t.id === id) || null;
 }
 
